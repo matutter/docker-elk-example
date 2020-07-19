@@ -1,0 +1,65 @@
+version: "3.5"
+services:
+  loggen:
+    image: loggen:test
+    environment:
+      LOGSTASH_FIELDS: role=loggen,tier=1,instance=1
+    networks:
+    - lognet
+  nginx:
+    image: nginx
+    networks:
+    - lognet
+    environment:
+      LOGSTASH_FIELDS: role=proxy,tier=2,instance=1
+  logspout:
+    image: logspout-logstash:custom_1
+    networks:
+    - lognet
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      ROUTE_URIS: multiline+logstash://logstash:5000
+      LOGSPOUT: ignore
+      MULTILINE_MATCH: nonfirst
+      MULTILINE_PATTERN: '^(TRACE:)'
+
+  logstash:
+    image: logstash:7.8.0
+    volumes:
+    - ${PWD}/logstash.conf:/logstash.conf
+    # - ${PWD}/logstash.yml:/usr/share/logstash/config/logstash.yml
+    command: ['-f', '/logstash.conf', '--config.reload.automatic']
+    environment:
+      LOGSPOUT: ignore
+      XPACK_SECURITY_ENABLED: 'false'
+      XPACK_REPORTING_ENABLED: 'false'
+      XPACK_MONITORING_ENABLED: 'false'
+    networks:
+    - lognet
+  elasticsearch:
+    image: elasticsearch:7.8.0
+    environment:
+      discovery.type: single-node
+      LOGSPOUT: ignore
+      XPACK_SECURITY_ENABLED: 'false'
+      XPACK_REPORTING_ENABLED: 'false'
+      XPACK_MONITORING_ENABLED: 'false'
+    networks:
+    - lognet
+  kibana:
+    image: kibana:7.8.0
+    environment:
+      LOGSPOUT: ignore
+      XPACK_SECURITY_ENABLED: 'false'
+    volumes:
+    - ${PWD}/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+    - 5601:5601
+    networks:
+    - lognet
+
+networks:
+  lognet:
+    
+

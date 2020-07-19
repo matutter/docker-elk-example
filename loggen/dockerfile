@@ -1,0 +1,7 @@
+FROM python:3.8.4
+
+ADD main.py /main.py
+
+RUN pip install Faker requests
+
+ENTRYPOINT [ "python", "/main.py" ]
