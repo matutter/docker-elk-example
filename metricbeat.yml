@@ -1,0 +1,28 @@
+metricbeat.config.modules:
+  reload.enabled: false
+  reload.period: 2s
+
+# Delay after startup to begin collecting metrics
+metricbeat.max_start_delay: 2s
+
+metricbeat.modules:
+- module: system
+  enabled: true
+  metricsets: ['cpu', 'load', 'memory', 'network', 'fsstat']
+  period: 150s
+  cpu.metrics: ["percentages", "normalized_percentages"]
+- module: docker
+  enabled: true
+  metricsets: ["container", "event", "healthcheck"]
+  hosts: ["unix:///var/run/docker.sock"]
+  period: 150s
+
+processors:
+- add_fields:
+    target: host
+    fields:
+      name: ${HOSTNAME}
+
+output.logstash:
+  hosts: ["logstash:5044"]
+  enabled: true

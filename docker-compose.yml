@@ -58,8 +58,30 @@ services:
     - 5601:5601
     networks:
     - lognet
+  metricbeat:
+    image: store/elastic/metricbeat:7.8.0
+    user: root
+    environment:
+      LOGSPOUT: ignore
+      # Metricbeat may not resolve the hostname correctly - "stack deploy" will
+      # template these variables out and we may reference them via YAML
+      # environment variable interpolation when metricbeat.yml loads
+      HOSTNAME: "{{.Node.Hostname}}"
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+    - /proc:/hostfs/proc:ro
+    - /:/hostfs:ro
+    # - ${PWD}/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+    networks:
+    - lognet
+    secrets:
+    - source: metricbeat_conf
+      target: /usr/share/metricbeat/metricbeat.yml
 
 networks:
   lognet:
-    
 
+secrets:
+  metricbeat_conf:
+    file: ${PWD}/metricbeat.yml
